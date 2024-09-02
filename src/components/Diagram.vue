@@ -30,7 +30,7 @@ defineProps({
           <tbody class="tbody border-b" v-if="!loaderState">
             <tr
               v-for="itemInTable in items2"
-              :key="itemInTable.domain"
+              :key="itemInTable.id"
               class="table-elem border-b hover:bg-gray-50"
             >
               <td class="px-4 py-3 font-medium text-gray-900">
@@ -38,7 +38,7 @@ defineProps({
               </td>
               <td class="px-4 py-3 font-medium text-gray-900">
                 <a :href="itemInTable.srcip" target="_blank">
-                  {{ itemInTable.domain }}
+                  {{ itemInTable.domainName }}
                 </a>
               </td>
               <td class="px-4 py-3 font-medium text-gray-900">
@@ -61,7 +61,7 @@ defineProps({
 
 <style>
 .table-wrapper {
-  width: 50vw;
+  width: 50%;
 }
 
 .info-table {

@@ -86,8 +86,7 @@ defineProps({
       </div>
     </div>
     <Pagination
-      :pages-list="paginationParams.pagesList"
-      :total-pages="paginationParams.totalPages"
+      :pagination-params="paginationParams"
       :select-page="selectPage"
     />
   </div>
@@ -95,7 +94,7 @@ defineProps({
 
 <style>
 .table-wrapper {
-  width: 50vw;
+  width: 50%;
 }
 
 .form {

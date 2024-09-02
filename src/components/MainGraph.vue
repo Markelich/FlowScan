@@ -1,36 +1,14 @@
 <script setup>
 import Chart from 'chart.js/auto'
-import { onMounted } from 'vue'
+import axios from 'axios';
+import { onMounted, ref } from 'vue';
 
-const displayMainChart = () => {
-  const ctx = document.getElementById('Chart')
-  const cfg = {
-    type: 'bar',
-    data: {
-      labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
-      datasets: [
-        {
-          label: '# of Votes',
-          data: [12, 19, 3, 5, 2, 3],
-          borderWidth: 1
-        }
-      ]
-    },
-    options: {
-      maintainAspectRatio: true,
-      scales: {
-        y: {
-          beginAtZero: true
-        }
-      }
-    }
-  }
 
-  const mainChart = new Chart(ctx, cfg)
-}
 
-onMounted(displayMainChart)
-onMounted(displayMainChart)
+
+
+
+
 </script>
 
 <template>
@@ -50,6 +28,7 @@ onMounted(displayMainChart)
 }
 
 .graph-content {
+  padding: 20px 30px 20px 20px;
   /* max-height: 563px; */
   /* max-height: 800px; */
 }

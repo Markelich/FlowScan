@@ -1,25 +1,23 @@
 <script setup>
 defineProps({
-  pagesList: Array,
-  totalPages: Number,
-  curentPage: Number,
+  paginationParams: Object,
   selectPage: Function
 })
 </script>
 
 <template>
-  <div v-if="pagesList" class="pagination flex flex-row flex-wrap justify-center gap-2">
+  <div v-if="paginationParams.pagesList" class="pagination flex flex-row flex-wrap justify-center gap-2">
     <button class="last-buttons" @click="selectPage" :value="1">First</button>
     <button
       class="midle-buttons"
       @click="selectPage"
-      v-for="page in pagesList"
+      v-for="page in paginationParams.pagesList"
       :key="page"
       :value="page"
     >
       {{ page }}
     </button>
-    <button class="last-buttons" @click="selectPage" :value="totalPages">Last</button>
+    <button class="last-buttons" @click="selectPage" :value="paginationParams.totalPages">Last</button>
   </div>
 </template>
 

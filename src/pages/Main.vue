@@ -1,6 +1,6 @@
 <script setup>
 import { onMounted, ref, watch } from 'vue'
-
+import Chart from 'chart.js/auto'
 import axios from 'axios'
 import Diagram from '../components/Diagram.vue'
 import DataTable from '../components/DataTable.vue'
@@ -12,6 +12,7 @@ const port = '8000'
 
 const items = ref([])
 const items2 = ref([])
+const MainGraphData = ref([])
 
 const queryStartListIsRuning = ref(false)
 const queryDiagramIsRuning = ref(false)
@@ -26,11 +27,23 @@ const dataFlags = ref({
   finalTime: '2024-08-17T18:44'
 })
 const paginationParams = ref({
-  curentPage: null,
-  pagesList: null,
-  itemsOnPage: null,
-  totalPages: null
-})
+  startTable: {
+    curentPage: null,
+    pagesList: null,
+    itemsOnPage: null,
+    totalPages: null
+  }, 
+  secondTable: {
+    curentPage: null,
+    pagesList: null,
+    itemsOnPage: null,
+    totalPages: null
+  }
+}
+  )
+
+
+
 
 const changeStateLoaderDataTime = async () => {
   loaderState.value.dataTable = !loaderState.value.dataTable
@@ -79,15 +92,7 @@ const ChangeSelect = async (event) => {
   console.log(dataFlags.value)
 }
 
-const getUserIpList = async () => {
-  items2.value = await getUserStat()
-  queryDiagramIsRuning.value = await false
-  console.log('QUERY_COMPLETED')
-  setTimeout(() => {
-    items2.value.map(async (item) => await fetchData(item))
-    console.log(items2.value)
-  }, 1000)
-}
+
 
 const getUserStat = async () => {
   if (queryDiagramIsRuning.value) {
@@ -100,77 +105,69 @@ const getUserStat = async () => {
       const { data } = await axios.get(
         `http://${server}:${port}/hosts/${userAddress}/${dataFlags.value.startTime}/${dataFlags.value.finalTime}`
       )
-      items2.value = data.map((item) => {
-        return {
-          ...item,
-          domain: 'NETU BLYADЬ'
-        }
-      })
-      // console.log(items2.value)
-      return items2.value
+      items2.value = data
     } catch (err) {
       items2.value = null
       console.log(err)
     }
+    queryDiagramIsRuning.value = await false
+    console.log('QUERY_COMPLETED')
+
+      Promise.all(items2.value.map(obj => getDomainName(obj)))
+        .then(result => {
+          console.log(result);
+        })
+        .catch(error => {
+          console.error(error);
+        }); 
+
   }
 }
 
-// const getDomainNames = async () => {
-//   try {
-//     domains.value = await items2.value.map(async (item) => {
-//       const { response } = await axios.get(`http://${server}:${port}/domain_names/${item.srcip}`)
-//       console.log(response)
-//     })
+const getDomainName = (obj) => {
+  return new Promise((resolve, reject) => {
+        axios.get(`http://${server}:${port}/domain_names/${obj.srcip}`)
+            .then(response => {
+                const domainName = response.data;
+                obj.domainName = domainName;
+                resolve(obj);
+            })
+            .catch(error => {
+                reject(error);
+            });
+    });
 
-//     console.log(domains, '11')
-//     console.log('11', domains.value)
-//     console.log(items2.value)
-//   } catch (err) {
-//     console.log(err)
-//   }
-// }
+}
 
-// const fetchData = async (item) => {
-//   try {
-//     const response = await axios.get(`http://${server}:${port}/domain_names/${item.srcip}`)
-//     console.log(response.data)
-//     return {
-//       ...item,
-//       domainName: response.data
-//     }
-//   } catch (error) {
-//     console.error(error)
-//   }
-// }
 
 const selectPage = (event) => {
-  paginationParams.value.totalPages = Math.ceil(items.value.length / 10)
+  paginationParams.value.startTable.totalPages = Math.ceil(items.value.length / 10)
   if (event.target.value) {
-    paginationParams.value.curentPage = Number(event.target.value)
+    paginationParams.value.startTable.curentPage = Number(event.target.value)
   } else {
-    paginationParams.value.curentPage = 1
+    paginationParams.value.startTable.curentPage = 1
   }
-  paginationParams.value.itemsOnPage = items.value.slice(
-    (paginationParams.value.curentPage - 1) * 10,
-    paginationParams.value.curentPage * 10
+  paginationParams.value.startTable.itemsOnPage = items.value.slice(
+    (paginationParams.value.startTable.curentPage - 1) * 10,
+    paginationParams.value.startTable.curentPage * 10
   )
-  if (paginationParams.value.curentPage <= 3) {
-    paginationParams.value.pagesList = [1, 2, 3, 4, 5]
-  } else if (paginationParams.value.curentPage >= paginationParams.value.totalPages - 2) {
-    paginationParams.value.pagesList = [
-      paginationParams.value.totalPages - 4,
-      paginationParams.value.totalPages - 3,
-      paginationParams.value.totalPages - 2,
-      paginationParams.value.totalPages - 1,
-      paginationParams.value.totalPages
+  if (paginationParams.value.startTable.curentPage <= 3) {
+    paginationParams.value.startTable.pagesList = [1, 2, 3, 4, 5]
+  } else if (paginationParams.value.startTable.curentPage >= paginationParams.value.startTable.totalPages - 2) {
+    paginationParams.value.startTable.pagesList = [
+      paginationParams.value.startTable.totalPages - 4,
+      paginationParams.value.startTable.totalPages - 3,
+      paginationParams.value.startTable.totalPages - 2,
+      paginationParams.value.startTable.totalPages - 1,
+      paginationParams.value.startTable.totalPages
     ]
   } else {
-    paginationParams.value.pagesList = [
-      paginationParams.value.curentPage - 2,
-      paginationParams.value.curentPage - 1,
-      paginationParams.value.curentPage,
-      paginationParams.value.curentPage + 1,
-      paginationParams.value.curentPage + 2
+    paginationParams.value.startTable.pagesList = [
+      paginationParams.value.startTable.curentPage - 2,
+      paginationParams.value.startTable.curentPage - 1,
+      paginationParams.value.startTable.curentPage,
+      paginationParams.value.startTable.curentPage + 1,
+      paginationParams.value.startTable.curentPage + 2
     ]
   }
   // console.log(paginationParams.value.totalPages, 'totalPages')
@@ -180,7 +177,86 @@ const selectPage = (event) => {
   // console.log('type curentPage', typeof paginationParams.value.curentPage)
 }
 
-onMounted(getStartList)
+
+
+const getAllLastDataTraffic = async () => {
+  try {
+    const { data } = await axios.get(`http://${server}:${port}/curentData`)
+    MainGraphData.value = data
+    
+  } catch (err){
+    MainGraphData.value = null
+    console.log(err)
+  }
+} 
+
+const displayMainChart = () => {
+  const ctx = document.getElementById('Chart').getContext('2d')
+  const cfg = {
+    type: 'line',
+    data: {
+      labels: MainGraphData.value.map((item) => {
+        return item.timestemp
+      }),
+      datasets: [
+        { 
+          label: 'gbdff',
+          data: MainGraphData.value.map((item) => {
+            return item.octets
+          }),
+          borderWidth: 1,
+          borderColor: 'rgba(54, 162, 235, 1)',
+          fill: true,
+          backgroundColor: 'rgba(54, 162, 235, 1)'
+        }
+      ]
+    },
+    options: {
+      // parsing: false,
+      interaction: {
+        mode: 'nearest',
+        // axis: 'x',
+        intersect: false,
+      },
+      pointRadius: 0,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          type: 'linear',
+          beginAtZero: true
+        },
+        x: {
+          // type: 'linear',
+          display: false,
+        }
+      },
+      plugins: {
+        decimation: {
+          enabled: true,
+          algorithm: 'lttb',
+          samples: 50
+        },
+      }
+    }
+  }
+
+  const mainChart = new Chart(ctx, cfg)
+  // console.log(14)
+}
+
+onMounted(async() => {
+  changeStateLoaderDataTime()
+  await getAllLastDataTraffic()
+  await displayMainChart()
+  await changeStateLoaderDataTime()
+  await getStartList()
+  
+
+})
+
+
+// onMounted(getStartList)
+
 
 watch(queryStartListIsRuning, changeStateLoaderDataTime)
 watch(queryDiagramIsRuning, changeStateLoaderDiagram)
@@ -195,17 +271,41 @@ watch(queryDiagramIsRuning, changeStateLoaderDiagram)
       :select-start-date="selectStartDate"
       :select-final-date="selectFinalDate"
       :getStartList="getStartList"
-      :get-user-ip="getUserIpList"
+      :get-user-ip="getUserStat"
       :loader-state="loaderState.dataTable"
       :select-page="selectPage"
-      :pagination-params="paginationParams"
+      :pagination-params="paginationParams.startTable"
     />
     <Diagram :items2="items2" :dataFlags="dataFlags" :loader-state="loaderState.diagram" />
   </div>
-  <div class="graphs-content pt-6 flex flex-row gap-3 grow">
-    <MainGraph />
+  <div class="graphs-content pt-6 flex flex-row gap-3 ">
+    <div class="graph-wrapper flex">
+    <div class="graph-content bg-white border rounded-lg overflow-auto flex flex-col grow">
+      <!-- <div class="h-10 w-full bg-cyan-400"></div> -->
+      <div class="w-full h-full grow">
+        <canvas id="Chart"></canvas>
+      </div>
+    </div>
+  </div>
+    <!-- <MainGraph :server="server" :port="port"/> -->
     <!-- <MainGraph /> -->
   </div>
 </template>
 
-<style></style>
+<style>
+.graphs-content {
+
+  height: 644px;
+}
+
+.graph-wrapper {
+  width: 50%;
+}
+
+.graph-content {
+  padding: 20px 30px 20px 20px;
+  /* max-height: 563px; */
+  /* max-height: 800px; */
+}
+
+</style>
