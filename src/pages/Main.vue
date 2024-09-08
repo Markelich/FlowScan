@@ -1,6 +1,6 @@
 <script setup>
 import { onMounted, ref, watch } from 'vue'
-import Chart from 'chart.js/auto'
+import Chart, { scales } from 'chart.js/auto'
 import axios from 'axios'
 import Diagram from '../components/Diagram.vue'
 import DataTable from '../components/DataTable.vue'
@@ -27,6 +27,7 @@ const dataFlags = ref({
   finalTime: '2024-08-17T18:44'
 })
 const paginationParams = ref({
+  clickedPage: null,
   startTable: {
     curentPage: null,
     pagesList: null,
@@ -95,41 +96,44 @@ const ChangeSelect = async (event) => {
 
 
 const getUserStat = async () => {
-  if (queryDiagramIsRuning.value) {
-    console.log('QUERY_IS_RUN_NOW')
-  } else {
-    queryDiagramIsRuning.value = true
-    console.log('BEGIN_START_QUERY')
     try {
+      queryDiagramIsRuning.value = true
+      console.log(queryDiagramIsRuning.value)
       const userAddress = event.target.value
       const { data } = await axios.get(
         `http://${server}:${port}/hosts/${userAddress}/${dataFlags.value.startTime}/${dataFlags.value.finalTime}`
       )
       items2.value = data
+      selectPage2(event)
+      console.log(items.value, items2.value)
     } catch (err) {
       items2.value = null
       console.log(err)
     }
     queryDiagramIsRuning.value = await false
-    console.log('QUERY_COMPLETED')
+    console.log('QUERY_COMPLETED')    
+    Promise.all(items2.value.map(obj => getDomainName(obj)))
+    .then(result => {
+      console.log(result);
+    })
+    .catch(error => {
+      console.error(error);
+    }); 
 
-      Promise.all(items2.value.map(obj => getDomainName(obj)))
-        .then(result => {
-          console.log(result);
-        })
-        .catch(error => {
-          console.error(error);
-        }); 
 
-  }
+
+
+
 }
 
 const getDomainName = (obj) => {
+  console.log(obj.srcip)
   return new Promise((resolve, reject) => {
-        axios.get(`http://${server}:${port}/domain_names/${obj.srcip}`)
+       axios.get(`http://${server}:${port}/domain_names/${obj.srcip}`)
             .then(response => {
                 const domainName = response.data;
                 obj.domainName = domainName;
+
                 resolve(obj);
             })
             .catch(error => {
@@ -138,6 +142,7 @@ const getDomainName = (obj) => {
     });
 
 }
+
 
 
 const selectPage = (event) => {
@@ -170,11 +175,40 @@ const selectPage = (event) => {
       paginationParams.value.startTable.curentPage + 2
     ]
   }
-  // console.log(paginationParams.value.totalPages, 'totalPages')
-  // console.log(paginationParams.value.curentPage, 'curentPage')
+  // console.log(paginationParams.value)
+}
 
-  // console.log(paginationParams.value.pagesList, 'pagesList')
-  // console.log('type curentPage', typeof paginationParams.value.curentPage)
+const selectPage2 = (event) => {
+  paginationParams.value.secondTable.totalPages = Math.ceil(items2.value.length / 10)
+  if (event.target.value) {
+    paginationParams.value.secondTable.curentPage = Number(event.target.value)
+  } else {
+    paginationParams.value.secondTable.curentPage = 1
+  }
+  paginationParams.value.secondTable.itemsOnPage = items2.value.slice(
+    (paginationParams.value.secondTable.curentPage - 1) * 10,
+    paginationParams.value.secondTable.curentPage * 10
+  )
+  if (paginationParams.value.secondTable.curentPage <= 3) {
+    paginationParams.value.secondTable.pagesList = [1, 2, 3, 4, 5]
+  } else if (paginationParams.value.secondTable.curentPage >= paginationParams.value.secondTable.totalPages - 2) {
+    paginationParams.value.secondTable.pagesList = [
+      paginationParams.value.secondTable.totalPages - 4,
+      paginationParams.value.secondTable.totalPages - 3,
+      paginationParams.value.secondTable.totalPages - 2,
+      paginationParams.value.secondTable.totalPages - 1,
+      paginationParams.value.secondTable.totalPages
+    ]
+  } else {
+    paginationParams.value.secondTable.pagesList = [
+      paginationParams.value.secondTable.curentPage - 2,
+      paginationParams.value.secondTable.curentPage - 1,
+      paginationParams.value.secondTable.curentPage,
+      paginationParams.value.secondTable.curentPage + 1,
+      paginationParams.value.secondTable.curentPage + 2
+    ]
+  }
+  // console.log(paginationParams.value)
 }
 
 
@@ -191,65 +225,59 @@ const getAllLastDataTraffic = async () => {
 } 
 
 const displayMainChart = () => {
+  const dataPoints = MainGraphData.value.map((item) => {
+    return {x: item.index, y: item.speed}
+  })
+  console.log(dataPoints)
   const ctx = document.getElementById('Chart').getContext('2d')
   const cfg = {
     type: 'line',
     data: {
-      labels: MainGraphData.value.map((item) => {
-        return item.timestemp
-      }),
-      datasets: [
-        { 
-          label: 'gbdff',
-          data: MainGraphData.value.map((item) => {
-            return item.octets
-          }),
-          borderWidth: 1,
-          borderColor: 'rgba(54, 162, 235, 1)',
-          fill: true,
-          backgroundColor: 'rgba(54, 162, 235, 1)'
-        }
-      ]
+      datasets: [{
+        data: dataPoints,
+        borderWidth: 1,
+        label: 'Large Dataset',
+        radius: 0,
+      }]
     },
     options: {
+      // animation: false,
+      maintainAspectRatio: false,
       // parsing: false,
       interaction: {
         mode: 'nearest',
-        // axis: 'x',
-        intersect: false,
-      },
-      pointRadius: 0,
-      maintainAspectRatio: false,
-      scales: {
-        y: {
-          type: 'linear',
-          beginAtZero: true
-        },
-        x: {
-          // type: 'linear',
-          display: false,
-        }
+        axis: 'x',
+        intersect: false
       },
       plugins: {
-        decimation: {
-          enabled: true,
-          algorithm: 'lttb',
-          samples: 50
+      // decimation: {
+      //   enabled: true,
+      //   algorithm: 'min-max',
+      // }
+      },
+      scales: {
+        x: {
+          // type: 'linear',
+          display: false
         },
+        y: {
+            ticks: {
+              beginAtZero: true,
+            }    
+        }
       }
-    }
   }
+}
+const mainChart = new Chart(ctx, cfg)
 
-  const mainChart = new Chart(ctx, cfg)
-  // console.log(14)
 }
 
 onMounted(async() => {
   changeStateLoaderDataTime()
-  await getAllLastDataTraffic()
-  await displayMainChart()
-  await changeStateLoaderDataTime()
-  await getStartList()
+  // await getAllLastDataTraffic()
+  // displayMainChart()
+  changeStateLoaderDataTime()
+  getStartList()
   
 
 })
@@ -276,17 +304,22 @@ watch(queryDiagramIsRuning, changeStateLoaderDiagram)
       :select-page="selectPage"
       :pagination-params="paginationParams.startTable"
     />
-    <Diagram :items2="items2" :dataFlags="dataFlags" :loader-state="loaderState.diagram" />
+    <Diagram 
+      :items2="items2" 
+      :dataFlags="dataFlags" 
+      :loader-state="loaderState.diagram"  
+      :select-page2="selectPage2"
+      :pagination-params="paginationParams.secondTable"
+    />
   </div>
   <div class="graphs-content pt-6 flex flex-row gap-3 ">
     <div class="graph-wrapper flex">
-    <div class="graph-content bg-white border rounded-lg overflow-auto flex flex-col grow">
-      <!-- <div class="h-10 w-full bg-cyan-400"></div> -->
-      <div class="w-full h-full grow">
-        <canvas id="Chart"></canvas>
+      <div class="graph-content bg-white border rounded-lg overflow-auto flex flex-col grow">
+        <div class="w-full h-full grow">
+          <canvas id="Chart"></canvas>
+        </div>
       </div>
     </div>
-  </div>
     <!-- <MainGraph :server="server" :port="port"/> -->
     <!-- <MainGraph /> -->
   </div>

@@ -1,8 +1,14 @@
 <script setup>
-defineProps({
+const props = defineProps({
   paginationParams: Object,
-  selectPage: Function
+  selectPage: Function,
 })
+const emit = defineEmits(['buildingPagination'])
+
+
+
+
+
 </script>
 
 <template>
