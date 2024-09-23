@@ -35,8 +35,8 @@ const prop = defineProps({
           @input="selectFinalDate"
         />
         <select @change="ChangeSelect" class="border rounded-lg outline-none">
-          <option value="dstip">Клиенты</option>
-          <option value="srcip">Сервера</option>
+          <option value="dstip">Clients</option>
+          <option value="srcip">Servers</option>
         </select>
         <button type="button" class="button-search" @click="getStartList">Search</button>
       </form>
@@ -69,7 +69,7 @@ const prop = defineProps({
                 {{ item[Object.keys(item)[2]] }}
               </td> -->
               <td class="px-4 py-3 font-medium text-gray-900">
-                <span>{{ item[Object.keys(item)[3]] }} </span>
+                <span>{{ item[Object.keys(item)[2]] }} </span>
               </td>
               <td class="px-4 py-3 font-medium text-gray-900">
                 <button

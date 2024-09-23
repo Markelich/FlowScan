@@ -2,16 +2,21 @@
 import { onMounted, ref, watch } from 'vue'
 import Chart, { scales } from 'chart.js/auto'
 import axios from 'axios'
+import Header from '@/components/Header.vue'
 import Diagram from '../components/Diagram.vue'
 import DataTable from '../components/DataTable.vue'
-import MainGraph from '@/components/MainGraph.vue'
+import Graph from '../components/Graph.vue'
+// import Modal from '../components/Modal.vue'
+
+
+
 
 const server = '192.168.0.66'
 const port = '8000'
 // const server = '80.73.69.138'
 
 const items = ref([])
-const items2 = ref([])
+const items2 = ref(null)
 const MainGraphData = ref([])
 
 const queryStartListIsRuning = ref(false)
@@ -42,7 +47,6 @@ const paginationParams = ref({
   }
 }
   )
-
 
 
 
@@ -105,20 +109,13 @@ const getUserStat = async () => {
       )
       items2.value = data
       selectPage2(event)
-      console.log(items.value, items2.value)
     } catch (err) {
       items2.value = null
       console.log(err)
     }
-    queryDiagramIsRuning.value = await false
+    
     console.log('QUERY_COMPLETED')    
-    Promise.all(items2.value.map(obj => getDomainName(obj)))
-    .then(result => {
-      console.log(result);
-    })
-    .catch(error => {
-      console.error(error);
-    }); 
+
 
 
 
@@ -128,6 +125,9 @@ const getUserStat = async () => {
 
 const getDomainName = (obj) => {
   console.log(obj.srcip)
+  if (obj.domainName){
+    return
+  } else {
   return new Promise((resolve, reject) => {
        axios.get(`http://${server}:${port}/domain_names/${obj.srcip}`)
             .then(response => {
@@ -140,7 +140,7 @@ const getDomainName = (obj) => {
                 reject(error);
             });
     });
-
+  }
 }
 
 
@@ -175,10 +175,12 @@ const selectPage = (event) => {
       paginationParams.value.startTable.curentPage + 2
     ]
   }
+
   // console.log(paginationParams.value)
 }
 
 const selectPage2 = (event) => {
+  queryDiagramIsRuning.value = true
   paginationParams.value.secondTable.totalPages = Math.ceil(items2.value.length / 10)
   if (event.target.value) {
     paginationParams.value.secondTable.curentPage = Number(event.target.value)
@@ -208,6 +210,15 @@ const selectPage2 = (event) => {
       paginationParams.value.secondTable.curentPage + 2
     ]
   }
+  Promise.all(paginationParams.value.secondTable.itemsOnPage.map(obj => getDomainName(obj)))
+  .then(result => {
+      
+      console.log(result);
+    })
+    .catch(error => {
+      console.error(error);
+    });
+  queryDiagramIsRuning.value = false 
   // console.log(paginationParams.value)
 }
 
@@ -217,16 +228,17 @@ const getAllLastDataTraffic = async () => {
   try {
     const { data } = await axios.get(`http://${server}:${port}/curentData`)
     MainGraphData.value = data
-    
+    console.log(data)
+    displayChart()
   } catch (err){
     MainGraphData.value = null
     console.log(err)
   }
 } 
 
-const displayMainChart = () => {
+const displayChart = () => {
   const dataPoints = MainGraphData.value.map((item) => {
-    return {x: item.index, y: item.speed}
+    return {x: item.timepoint, y: item.octets}
   })
   console.log(dataPoints)
   const ctx = document.getElementById('Chart').getContext('2d')
@@ -261,8 +273,11 @@ const displayMainChart = () => {
           display: false
         },
         y: {
+            suggestedMax: 100,
+            suggestedMin: 100,
             ticks: {
               beginAtZero: true,
+
             }    
         }
       }
@@ -273,13 +288,10 @@ const mainChart = new Chart(ctx, cfg)
 }
 
 onMounted(async() => {
-  changeStateLoaderDataTime()
-  // await getAllLastDataTraffic()
-  // displayMainChart()
-  changeStateLoaderDataTime()
+  getAllLastDataTraffic()
   getStartList()
-  
-
+  changeStateLoaderDataTime()
+  changeStateLoaderDataTime()
 })
 
 
@@ -291,37 +303,45 @@ watch(queryDiagramIsRuning, changeStateLoaderDiagram)
 </script>
 
 <template>
-  <div class="diagrams-content flex flex-row gap-3 items-start">
-    <DataTable
-      :items="items"
-      :dataFlags="dataFlags"
-      :Change-select="ChangeSelect"
-      :select-start-date="selectStartDate"
-      :select-final-date="selectFinalDate"
-      :getStartList="getStartList"
-      :get-user-ip="getUserStat"
-      :loader-state="loaderState.dataTable"
-      :select-page="selectPage"
-      :pagination-params="paginationParams.startTable"
-    />
-    <Diagram 
-      :items2="items2" 
-      :dataFlags="dataFlags" 
-      :loader-state="loaderState.diagram"  
-      :select-page2="selectPage2"
-      :pagination-params="paginationParams.secondTable"
-    />
-  </div>
-  <div class="graphs-content pt-6 flex flex-row gap-3 ">
-    <div class="graph-wrapper flex">
-      <div class="graph-content bg-white border rounded-lg overflow-auto flex flex-col grow">
-        <div class="w-full h-full grow">
-          <canvas id="Chart"></canvas>
+  <Header/>
+  <div class="wrapper bg-gray-100">
+ 
+    <div class="main-content min-h-screen p-6 flex flex-col justify-stretch">
+
+      <div class="diagrams-content flex flex-row gap-3 items-start">
+        <DataTable
+          :items="items"
+          :dataFlags="dataFlags"
+          :Change-select="ChangeSelect"
+          :select-start-date="selectStartDate"
+          :select-final-date="selectFinalDate"
+          :getStartList="getStartList"
+          :get-user-ip="getUserStat"
+          :loader-state="loaderState.dataTable"
+          :select-page="selectPage"
+          :pagination-params="paginationParams.startTable"
+        />
+        <Diagram 
+          :items2="items2" 
+          :dataFlags="dataFlags" 
+          :loader-state="loaderState.diagram"  
+          :select-page2="selectPage2"
+          :pagination-params="paginationParams.secondTable"
+        />
+      </div>
+      <div class="graphs-content pt-6 flex flex-row gap-3 ">
+        <div class="graph-wrapper flex">
+          <div class="graph-content bg-white border rounded-lg overflow-auto flex flex-col grow">
+            <!-- <Graph
+              :get-all-last-data-traffic="getAllLastDataTraffic"
+              :display-chart="displayChart"/> -->
+              <div class="w-full h-full grow">
+                <canvas id="Chart"></canvas>
+              </div>
+          </div>
         </div>
       </div>
     </div>
-    <!-- <MainGraph :server="server" :port="port"/> -->
-    <!-- <MainGraph /> -->
   </div>
 </template>
 

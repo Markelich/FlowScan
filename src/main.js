@@ -2,6 +2,7 @@ import './assets/main.css'
 
 import { createApp } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
+
 import App from './App.vue'
 
 import Main from './pages/Main.vue'
@@ -19,5 +20,6 @@ const router = createRouter({
   routes
 })
 
-app.use(router)
-app.mount('#app')
+app.use(router).mount('#app')
+
+

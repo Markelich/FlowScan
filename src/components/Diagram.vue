@@ -1,23 +1,36 @@
 <script setup>
 import Loader from './Loader.vue'
 import Pagination from './Pagination.vue'
+import test from '@/components/test.vue'
 
 defineProps({
   items2: Array,
   dataFlags: Object,
   loaderState: Boolean,
   selectPage2: Function,
-  paginationParams: Object
+  paginationParams: Object,
+  changeStateModal: Function
 })
 </script>
 
 <template>
   <div class="table-wrapper flex flex-col gap-3">
     <div class="table-content bg-white border rounded-lg overflow-hidden">
-      <div class="info-table sticky top-0 bg-white flex-wrap">
-        <div>
-          <span>{{ dataFlags.startTime }} - {{ dataFlags.finalTime }}</span>
-        </div>
+      <div v-if="items2 == null" class="info-table sticky top-0 bg-white flex-wrap">
+
+          <div>
+            <span>no data</span>
+          </div>
+
+      </div>
+      <div v-if="items2 != null" class=" info-table sticky top-0 bg-white flex-wrap direction-row">
+          <div>
+            <span>{{ dataFlags.startTime }} - {{ dataFlags.finalTime }}</span>
+          
+          </div>
+          <div>
+            <span> {{ items2[0].dstip }}</span>
+          </div>
       </div>
       <div class="table-field2">
         <table class="w-full text-sm text-left text-gray-500">
@@ -26,9 +39,9 @@ defineProps({
               <th class="px-4 py-3">ID</th>
               <th class="px-4 py-3">sourse</th>
               <th class="px-4 py-3">domain name</th>
-              <th class="px-4 py-3">destenation</th>
               <!-- <th class="px-4 py-3">pkts</th> -->
               <th class="px-4 py-3">size</th>
+              <th class="px-4 py-3">actions</th>
             </tr>
           </thead>
           <tbody class="tbody border-b whitespace-nowrap" v-if="!loaderState">
@@ -48,14 +61,16 @@ defineProps({
                   {{ itemInTable.domainName }}
                 </a>
               </td>
-              <td class="px-4 py-3 font-medium text-gray-900">
-                {{ itemInTable.dstip }}
-              </td>
               <!-- <td class="px-4 py-3 font-medium text-gray-900">
                 {{ itemInTable.pkts }}
               </td> -->
               <td class="px-4 py-3 font-medium text-gray-900">
-                {{ itemInTable.octets + ' MB' }}
+                {{ itemInTable.octets}}
+              </td>
+              <td class="font-medium text-gray-900">
+                <button class="text-indigo-500 hover:underline" @click="changeStateModal">
+                  <test />
+                </button>
               </td>
             </tr>
           </tbody>
